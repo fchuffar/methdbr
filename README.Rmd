@@ -1,0 +1,108 @@
+---
+title: "A database of normal human tissue methylation values: `methdbr`"
+author: "Florent Chuffart & Magali Richard"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+---
+
+
+# Description
+
+The `methdbr` package provides a dataset of normal human tissue methylation values. Tissues and methylation are described into a 2 distincts data frames.
+
+# Content of the package
+
+Objects available in the package are:
+
+  * `methdbr_d`   A matrix of 187 x 137595 beta values (methylation).
+  * `methdbr_e`   A data frame that describes the 187 samples.
+  * `methdbr_pf`  A data frame that describes the 137595 CpG probes.
+  
+# Installation
+
+To get the current development version from github:
+
+```
+devtools::install_github("fchuffar/methdbr")
+```
+
+# Usage
+
+```
+rmarkdown::render("README.Rmd")
+```
+
+
+
+# Exemple: inputation of missing sex values
+
+```{r, echo=FALSE, eval=TRUE}
+knitr::opts_chunk$set(collapse=TRUE, comment = "#>", fig.width=9, fig.height=6, eval=TRUE, echo=FALSE, results="hide")
+```
+
+## Loading data
+```{r echo=TRUE}
+d  = methdbr::methdbr_d 
+e  = methdbr::methdbr_e 
+pf = methdbr::methdbr_pf
+```
+
+
+## Sex status
+
+```{r echo=TRUE, results="verbatim"}
+e$sex
+```
+
+## Logistic Regression
+
+```{r echo=TRUE}
+s = as.numeric(as.factor(e[colnames(d),]$sex)) - 1
+pvals = apply(d[8000:8500,], 1, function(meth){
+  # meth = d["cg22507154",]
+  m = glm(s~meth, family = binomial(logit))
+  m$coefficients
+  summary(m)$coefficients
+  pval = summary(m)$coefficients[2,4]
+})
+
+plot(-log10(pvals), main="Manhattan plot")
+
+probes = names(pvals)[order(pvals)][1:6]
+
+
+layout(matrix(1:6, 2, byrow=TRUE), respect=TRUE)
+for (probe in probes[1:6]) {
+  meth = d[probe,]
+  plot(meth, s, main=paste0("s~meth ", probe), col=s+1)
+  m = glm(s~meth, family = binomial(logit))
+  logitinv = function(x) 1/(1 + exp(-x))
+  x = sort(meth)
+  lines(x, logitinv(m$coefficients[[1]] + m$coefficients[[2]]*x), col=2, lwd=2)
+  py1x = function(t,m) {
+    x = m$coefficients[[1]] + m$coefficients[[2]]*t
+    1/(1 + exp(-x))
+  }
+  suppressWarnings(arrows(meth, s, meth, py1x(meth,m), col=adjustcolor(4, alpha.f=0.2), length=0.05, lwd=3))
+  legend("bottomright","P(Y|X)", col=4, lty=1, cex=0.6)  
+}
+
+```
+
+## Imputation of missing sex values
+
+```{r echo=TRUE}
+# TODO
+```
+
+# Session Information
+
+```{r, results="verbatim"}
+sessionInfo()
+```
+

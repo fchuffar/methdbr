@@ -1,0 +1,17 @@
+Package: methdbr
+Type: Package
+Title: A database of normal human tissue methylation values
+Description: The methdbr package provides a dataset of normal human tissue
+    methylation values. Tissues and methylation are described into a 2 distincts
+    data frames.
+Version: 0.0.0.9000
+Date: 2018-11-19
+Authors@R: c(
+    person("Florent", "Chuffart", , "florent.chuffart@gmail.com", c("aut", "cre")),
+    person("Magali", "Richard", ,"magali.richard@univ-grenoble-alpes.fr", "aut")
+    )
+Maintainer: Florent Chuffart <florent.chuffart@gmail.com>
+License: CeCILL
+LazyData: TRUE
+RoxygenNote: 5.0.1
+Depends: R(>= 2.10.0)
