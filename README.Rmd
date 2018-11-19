@@ -63,7 +63,7 @@ e$sex
 
 ```{r echo=TRUE}
 s = as.numeric(as.factor(e[colnames(d),]$sex)) - 1
-pvals = apply(d[8000:8500,], 1, function(meth){
+pvals = apply(d[3500:4000,], 1, function(meth){
   # meth = d["cg22507154",]
   m = glm(s~meth, family = binomial(logit))
   m$coefficients
