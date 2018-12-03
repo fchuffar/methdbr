@@ -1,0 +1,152 @@
+---
+title: "Imputation of missing sex values"
+author: "Florent Chuffart & Magali Richard"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE, width = 75)
+knitr::opts_chunk$set(echo = TRUE, fig.align='center', dev='png', dpi = 95, out.width = "100%")
+```
+
+# Loading data
+
+```{r echo=TRUE}
+d  = methdbr::methdbr_d 
+e  = methdbr::methdbr_e 
+pf = methdbr::methdbr_pf
+```
+
+
+# Sex status
+
+```{r echo=TRUE, results="verbatim"}
+table(e$sex, useNA="ifany")
+```
+
+# Imputation of missing sex values
+
+```{r}
+if (!exists("apply_func")) {
+  apply_func = apply  
+}
+
+```
+
+## Filtering probes
+
+```{r echo=TRUE}
+# filtering probes on chrX and/or chrY
+chrs = c("chr19", "chrX", "chrY")
+chrs = c("chrX", "chrY")
+chrs = c("chrX")
+# chrs = c("chrY")
+sum(pf$Chromosome%in%chrs)
+idx_probes = rownames(pf)[pf$Chromosome%in%chrs]
+
+# filtering tissues that are all NA
+idx_samples = colnames(d)[apply(is.na(d[idx_probes,]), 2, sum) < nrow(d[idx_probes,])]
+table(e[idx_samples,]$sex, useNA="ifany")
+
+# filtering probes containing NA
+idx_probes2 = idx_probes[apply(is.na(d[idx_probes,idx_samples]), 1, sum) == 0]
+sum(is.na(d[idx_probes2,idx_samples]))
+```
+
+## Problem for probes that completely discriminate sex
+
+```{r echo=TRUE, results="verbatim"}
+# problem for probes that comnpletely discriminate sex
+probe = "cg20818151"
+m = glm(s[idx_samples]~d[probe,idx_samples], family = binomial(logit))
+pval = summary(m)$coefficients[2,4]
+pval
+
+m = glm(c(s[idx_samples], 0, 0, 1, 1)~c(d[probe,idx_samples], 1,0,1,0), family = binomial(logit))
+pval = summary(m)$coefficients[2,4]
+pval
+```
+
+## Run reglog on selected probes
+
+```{r echo=TRUE, results="hide"}
+results = apply_func(d[idx_probes2,], 1, function(meth){
+  m = glm(c(s, 0,0,1,1)~c(meth, 0,1,0,1), family = binomial(logit))
+  m$coefficients
+  b = m$coefficients[[2]]
+  a = m$coefficients[[1]]
+  summary(m)$coefficients
+  aic = m$aic
+  pval = summary(m)$coefficients[2,4]
+  pval
+  if (m$converged) {
+    return(c(pval=pval, aic=aic, b=b, a=a))    
+  } else {
+    print("not converged")
+    return(NULL)
+  }
+})
+if (is.list(results)) {
+  results = do.call(rbind, results)  
+} else {
+  results = t(results)  
+}
+head(results)
+
+```
+
+## Filtering best models and visualisation
+
+```{r echo=TRUE}
+layout(matrix(1:2, 1, byrow=TRUE), respect=TRUE)
+# filetring probes accirding to beta and pvalk
+idx_probes3 = rownames(results)[results[,"b"] < -5 & -log10(results[,"pval"]) > 9]
+cols = c()
+cols[rownames(results)] = 1
+cols[idx_probes3] = 2
+plot(results[,"b"], -log10(results[,"pval"]), main="Volcano plot", col=adjustcolor(cols, alpha.f=0.3), pch=16)
+plot(results[,"aic"], -log10(results[,"pval"]), col=adjustcolor(cols, alpha.f=0.3), pch=16)
+```
+
+## Imputation 
+
+```{r echo=TRUE, results="verbatim"}
+# predict sex form models
+idx_topred = idx_samples[is.na(e[idx_samples,]$sex)]
+preds = sapply(idx_probes3, function(probe){
+  res = results[probe,]
+  pred = logitinv(res[["a"]] + res[["b"]]*d[probe,idx_topred])
+  pred
+})
+
+plot(density(preds))
+
+# Sex imputation 
+sort(apply(preds > 0.5, 1, sum))
+imputed_sex = (apply(preds > 0.5, 1, mean) > 0.5) + 0
+imputed_sex
+
+# particular individuals
+layout(matrix(1:2, 1, byrow=TRUE), respect=TRUE)
+sort(apply(preds > 0.5, 1, sum))
+dim(preds)
+plot(density(preds["GSM1179546",]))
+sum(preds["GSM1179546",]>0.5)
+e["GSM1179546",]
+plot(density(preds["GSM1179542",]))
+sum(preds["GSM1179542",])
+e["GSM1179542",]
+```
+
+# Session Information
+
+```{r, results="verbatim"}
+sessionInfo()
+```
+
