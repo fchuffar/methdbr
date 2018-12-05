@@ -62,6 +62,8 @@ sum(is.na(d[idx_probes2,idx_samples]))
 ## Problem for probes that completely discriminate sex
 
 ```{r echo=TRUE, results="verbatim"}
+s = as.numeric(as.factor(e[colnames(d),]$sex)) - 1
+names(s) = rownames(e)
 # problem for probes that comnpletely discriminate sex
 probe = "cg20818151"
 m = glm(s[idx_samples]~d[probe,idx_samples], family = binomial(logit))
@@ -121,6 +123,7 @@ plot(results[,"aic"], -log10(results[,"pval"]), col=adjustcolor(cols, alpha.f=0.
 idx_topred = idx_samples[is.na(e[idx_samples,]$sex)]
 preds = sapply(idx_probes3, function(probe){
   res = results[probe,]
+  logitinv = function(x) 1/(1 + exp(-x))
   pred = logitinv(res[["a"]] + res[["b"]]*d[probe,idx_topred])
   pred
 })

@@ -11,7 +11,7 @@
 
 <meta name="author" content="Florent Chuffart &amp; Magali Richard" />
 
-<meta name="date" content="2018-12-03" />
+<meta name="date" content="2018-12-05" />
 
 <title>Imputation of missing sex values</title>
 
@@ -215,7 +215,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Imputation of missing sex values</h1>
 <h4 class="author"><em>Florent Chuffart &amp; Magali Richard</em></h4>
-<h4 class="date"><em>2018-12-03</em></h4>
+<h4 class="date"><em>2018-12-05</em></h4>
 
 </div>
 
@@ -262,7 +262,9 @@ sum(is.na(d[idx_probes2,idx_samples]))</code></pre>
 </div>
 <div id="problem-for-probes-that-completely-discriminate-sex" class="section level2">
 <h2><span class="header-section-number">3.2</span> Problem for probes that completely discriminate sex</h2>
-<pre class="r"><code># problem for probes that comnpletely discriminate sex
+<pre class="r"><code>s = as.numeric(as.factor(e[colnames(d),]$sex)) - 1
+names(s) = rownames(e)
+# problem for probes that comnpletely discriminate sex
 probe = &quot;cg20818151&quot;
 m = glm(s[idx_samples]~d[probe,idx_samples], family = binomial(logit))</code></pre>
 <pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
@@ -317,6 +319,7 @@ plot(results[,&quot;aic&quot;], -log10(results[,&quot;pval&quot;]), col=adjustco
 idx_topred = idx_samples[is.na(e[idx_samples,]$sex)]
 preds = sapply(idx_probes3, function(probe){
   res = results[probe,]
+  logitinv = function(x) 1/(1 + exp(-x))
   pred = logitinv(res[[&quot;a&quot;]] + res[[&quot;b&quot;]]*d[probe,idx_topred])
   pred
 })
@@ -413,23 +416,10 @@ sum(preds[&quot;GSM1179546&quot;,]&gt;0.5)</code></pre>
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] Rcpp_0.12.19           later_0.7.5            BiocInstaller_1.22.3  
-##  [4] methdbr_0.0.0.9000     bitops_1.0-6           tools_3.3.0           
-##  [7] zlibbioc_1.18.0        digest_0.6.18          lattice_0.20-33       
-## [10] evaluate_0.10.1        memoise_1.1.0          preprocessCore_1.34.0 
-## [13] Matrix_1.2-6           shiny_1.1.0            DBI_1.0.0             
-## [16] GEOquery_2.38.4        RPostgreSQL_0.6-2      yaml_2.1.14           
-## [19] parallel_3.3.0         httr_1.1.0             stringr_1.2.0         
-## [22] knitr_1.17             gtools_3.8.1           caTools_1.17.1        
-## [25] epimedtools_0.0.1.9004 grid_3.3.0             ade4_1.7-8            
-## [28] nortest_1.0-4          Biobase_2.32.0         R6_2.3.0              
-## [31] survival_2.40-1        XML_3.98-1.4           rmarkdown_0.9.6.14    
-## [34] gdata_2.17.0           seqinr_3.4-5           magrittr_1.5          
-## [37] splines_3.3.0          promises_1.0.1         gplots_3.0.1          
-## [40] htmltools_0.3.6        BiocGenerics_0.18.0    beanplot_1.2          
-## [43] xtable_1.8-3           mime_0.6               httpuv_1.4.5          
-## [46] KernSmooth_2.23-15     stringi_1.1.5          affy_1.50.0           
-## [49] RCurl_1.95-4.8         affyio_1.42.0</code></pre>
+##  [1] magrittr_1.5       tools_3.3.0        htmltools_0.3.6   
+##  [4] yaml_2.1.14        Rcpp_0.12.19       stringi_1.1.5     
+##  [7] rmarkdown_0.9.6.14 knitr_1.17         methdbr_0.0.0.9000
+## [10] stringr_1.2.0      digest_0.6.18      evaluate_0.10.1</code></pre>
 </div>
 
 
